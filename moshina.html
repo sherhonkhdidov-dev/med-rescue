@@ -740,7 +740,6 @@ label.ph:active{background:#eef2f7}
 <label>Рақами мошин<input id="vh" placeholder="масалан, 103-01"></label>
 <label>Телефон<input id="ph" type="tel"></label>
 <button class="btn w" id="sv">Захира кардан ва GPS-ро фаъол кардан</button>
-<button class="btn o w" id="sm" style="margin-top:8px">Намоиши озмоишӣ (бе ҳаракат дар роҳ)</button>
 </section>
 <section id="pt" hidden>
 <div class="g3"><label>Синну сол<input id="ag" inputmode="numeric"></label><label>Фишори хун<input id="bp" placeholder="80/50"></label><label>Набз<input id="pl" inputmode="numeric" placeholder="120"></label></div>
@@ -770,14 +769,20 @@ km=(a,b,c,d)=>{const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.c
 nrm=s=>String(s||'').toLowerCase().replace(/ё/g,'е').replace(/ӣ/g,'и').replace(/ӯ/g,'у').replace(/ҳ/g,'х').replace(/қ/g,'к').replace(/ғ/g,'г').replace(/ҷ/g,'ч'),
 ST=s=>$('st').textContent=s,
 BB=[[36.67,67.34],[41.05,75.15]],
-TY={h:{n:'Беморхона',c:'#d62839'},m:{n:'Зоишгоҳ',c:'#d6336c'},d:{n:'Стоматология',c:'#0f9d8a'},c:{n:'Клиника / марказ',c:'#1d6fd8'}},
+TY={h:{n:'Беморхона',c:'#d62839'},m:{n:'Зоишгоҳ',c:'#d6336c'},a:{n:'Ёрии таъҷилӣ',c:'#e8590c'},c:{n:'Клиника / марказ',c:'#1d6fd8'},d:{n:'Стоматология',c:'#0f9d8a'},l:{n:'Озмоишгоҳ',c:'#7048e8'},s:{n:'Санатория',c:'#868e96'},p:{n:'Дорухона',c:'#2f9e44'}},
+ORD='hmacdlsp',
+KW={h:'беморхона бемористон шифохона больница hospital bemorxona bemorhona shifoxona',m:'зоишгоҳ тугруқхона роддом родильный дом maternity zoishgoh tugruqxona tugruqhona',a:'ёрии таъҷилӣ тез ёрдам скорая подстанция ambulance tez yordam',c:'клиника поликлиника марказ маркази тиббӣ clinic poliklinika',d:'стоматология дандонпизишкӣ стоматолог dental dentist',l:'озмоишгоҳ лаборатория ташхис laboratory',s:'санатория курорт барқарорсозӣ sanatorium',p:'дорухона аптека pharmacy dorixona'},
 OVS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter','https://lz4.overpass-api.de/api/interpreter'],
 PRE=t=>'[out:json][timeout:'+t+'];area["ISO3166-1"="TJ"][admin_level=2]->.a;',
 Q1=PRE(60)+'(nwr["amenity"~"^(hospital|clinic|doctors|dentist)$"](area.a);'+
 'nwr["healthcare"]["healthcare"!~"^(pharmacy|laboratory|optometrist|blood_donation|alternative|audiologist|sample_collection)$"](area.a););out center tags qt;',
 Q2=PRE(100)+'nwr["name"~"(Б|б)емористон|(Б|б)еморхона|(Ш|ш)ифохона|(Б|б)ольниц|(П|п)оликлиник|(Р|р)оддом|(Р|р)одильн|(З|з)оишгоҳ|(С|с)томатолог|(Д|д)андон|(Г|г)оспитал|hospital|clinic|maternity|dental",i]'+
-'["highway"!~"."]["route"!~"."]["shop"!~"."]["amenity"!~"^(pharmacy|school|college|university|kindergarten|restaurant|cafe|bank|bus_station)$"](area.a);out center tags qt;';
-let HS=[],ALL={},MK={},SEL,ME,F={h:1,m:1,d:1,c:1},ME0,hm,LD=0,LST=0,LIM=100;
+'["highway"!~"."]["route"!~"."]["shop"!~"."]["amenity"!~"^(pharmacy|school|college|university|kindergarten|restaurant|cafe|bank|bus_station)$"](area.a);out center tags qt;',
+Q3=PRE(100)+'(nwr["amenity"~"^(pharmacy|ambulance_station)$"](area.a);nwr["emergency"="ambulance_station"](area.a);'+
+'nwr["healthcare"~"^(pharmacy|laboratory|rehabilitation|sample_collection)$"](area.a);'+
+'nwr["name"~"(С|с)анатор|(К|к)урорт|(Т|т)ашхис|(О|о)змоишгоҳ|(Л|л)аборатор|(Д|д)орухона|(А|а)птек|(Т|т)ез (Ё|ё)рдам|(Ё|ё)рии таъҷилӣ|(Ё|ё)рдами таъҷилӣ|sanatori|laborator|pharmacy|ambulance",i]'+
+'["highway"!~"."]["route"!~"."]["shop"!~"."]["amenity"!~"^(school|college|university|kindergarten|restaurant|cafe|bank|bus_station)$"](area.a););out center tags qt;';
+let HS=[],ALL={},MK={},SEL,ME,F={h:1,m:1,a:1,c:1,d:1,l:1,s:1,p:1},ME0,hm,LD=0,LST=0,LIM=100;
 
 const map=L.map('map',{zoomControl:false,preferCanvas:true}).fitBounds(BB),LG=L.layerGroup().addTo(map);
 map.setMinZoom(map.getBoundsZoom(L.latLngBounds(BB)));map.setMaxBounds(L.latLngBounds(BB).pad(.1));
@@ -802,17 +807,22 @@ $('fl').onclick=()=>setBase(bi==2?0:bi+1);
 /* ---- muassasalar: yuklash ---- */
 function kind(t){const s=nrm([t.name,t['name:ru'],t['name:en'],t['name:tg'],t['name:uz']].join(' '));
  if(t.amenity=='dentist'||t.healthcare=='dentist'||/стоматол|дандон|дентал|dental|dentist|stomat/.test(s))return'd';
- if(/роддом|родильн|зоишгох|акушер|перинатал|maternity/.test(s)||t.healthcare=='birthing_centre'||t.healthcare=='midwife')return'm';
+ if(/роддом|родильн|зоишгох|акушер|перинатал|тугрук|maternity/.test(s)||t.healthcare=='birthing_centre'||t.healthcare=='midwife')return'm';
  if(t.amenity=='hospital'||t.healthcare=='hospital')return'h';
+ const hn=/беморхон|бемористон|больниц|шифохон|hospital/.test(s);
+ if(t.amenity=='ambulance_station'||t.emergency=='ambulance_station'||(!hn&&/тез ерд|таъчил|скор|ambulance/.test(s)))return'a';
+ if(t.amenity=='pharmacy'||t.healthcare=='pharmacy'||/дорухона|аптек|pharmac/.test(s))return'p';
+ if(t.healthcare=='laboratory'||t.healthcare=='sample_collection'||/озмоишгох|лаборатор|ташхис|диагност|laborator/.test(s))return'l';
+ if(t.healthcare=='rehabilitation'||/санатор|курорт|реабилит|баркарорсоз|sanator|rehab/.test(s))return's';
  return'c'}
 function parse(d){const s={};(d.elements||[]).forEach(e=>{const t=e.tags||{},c=e.center||e;if(c.lat==null||c.lon==null)return;
  const nm=t['name:tg']||t.name||t['name:ru']||t['name:en']||t['name:uz'],k=kind(t);if(!nm&&k!='h')return;
  const city=t['addr:city']||t['addr:district']||t['addr:street']||'',id=e.type[0]+e.id;
- s[id]={id,k,n:nm||'Беморхона ('+c.lat.toFixed(3)+', '+c.lon.toFixed(3)+')',c:city,s:nrm([nm,t.name,t['name:ru'],t['name:en'],t['name:uz'],city].join(' ')),ll:[c.lat,c.lon]}});
+ s[id]={id,k,n:nm||'Беморхона ('+c.lat.toFixed(3)+', '+c.lon.toFixed(3)+')',c:city,s:nrm([nm,t.name,t['name:ru'],t['name:en'],t['name:uz'],city,KW[k]].join(' ')),ll:[c.lat,c.lon]}});
  return Object.values(s)}
 function dedupe(a){const g={},o=[];a.forEach(h=>{const k=nrm(h.n),l=g[k]=g[k]||[];if(l.some(x=>km(x.ll[0],x.ll[1],h.ll[0],h.ll[1])<.25))return;l.push(h);o.push(h)});return o}
 function merge(a){a.forEach(h=>ALL[h.id]=h);HS=dedupe(Object.values(ALL))}
-function sv(){try{LS.mr_h4=J.stringify(HS)}catch{}}
+function sv(){try{LS.mr_h5=J.stringify(HS.filter(h=>h.id[0]!='x'))}catch{}}
 function ovq(u,q){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),90000);
  return fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal:ac.signal})
  .then(r=>{if(!r.ok)throw 0;return r.json()})
@@ -826,24 +836,26 @@ function chips(){const c={};HS.forEach(h=>c[h.k]=(c[h.k]||0)+1);
  $('ch').innerHTML=Object.keys(TY).map(k=>'<button data-k="'+k+'" class="'+(F[k]?'on':'')+'"><i style="background:'+TY[k].c+'"></i>'+TY[k].n+' '+(c[k]||0)+'</button>').join('')}
 $('ch').onclick=e=>{const b=e.target.closest('button');if(!b)return;F[b.dataset.k]^=1;chips();draw();sg()};
 function draw(){LG.clearLayers();MK={};let n=0;
- HS.forEach(h=>{if(!F[h.k])return;n++;
-  const m=L.circleMarker(h.ll,{radius:8,weight:2,color:'#fff',fillColor:TY[h.k].c,fillOpacity:1}).on('click',()=>pick(h.id)).addTo(LG);
+ [...HS].sort((a,b)=>ORD.indexOf(b.k)-ORD.indexOf(a.k)).forEach(h=>{if(!F[h.k])return;n++;
+  const m=L.circleMarker(h.ll,{radius:(h.k=='p'||h.k=='l')?5:8,weight:2,color:'#fff',fillColor:TY[h.k].c,fillOpacity:1}).on('click',()=>pick(h.id)).addTo(LG);
   m._h=h;m.bindTooltip(esc(h.n),{direction:'top'});MK[h.id]=m});
  lab();return n}
 function lab(){if(SEL)return;const z=map.getZoom(),b=map.getBounds(),bx=[];let n=0;
- Object.values(MK).sort((a,c)=>'hmdc'.indexOf(a._h.k)-'hmdc'.indexOf(c._h.k)).forEach(m=>{let on=0;
+ Object.values(MK).sort((a,c)=>ORD.indexOf(a._h.k)-ORD.indexOf(c._h.k)).forEach(m=>{let on=0;
   if(z>=11&&n<80&&b.contains(m.getLatLng())){const p=map.latLngToContainerPoint(m.getLatLng()),w=Math.min(210,m._h.n.length*7.4+20),r=[p.x+6,p.y-13,p.x+14+w,p.y+13];
    if(!bx.some(q=>r[0]<q[2]&&r[2]>q[0]&&r[1]<q[3]&&r[3]>q[1])){bx.push(r);on=1;n++}}
   if(on!=!!m._lb){m._lb=on;m.unbindTooltip();m.bindTooltip(esc(m._h.n),on?{permanent:true,direction:'right',offset:[10,0],className:'lbl'}:{direction:'top'})}})}
 map.on('moveend',lab);
 function setH(src,busy){chips();const n=draw();ST('Муассисаҳо: '+n+' · '+src+(busy?' · навсозӣ идома дорад…':'')+'. Номро нависед ё дар харита пахш кунед.');if(LST||$('q').value.trim())sg()}
 async function load(force){if(LD)return;LD=1;ST('Муассисаҳо боргирӣ мешаванд…');let fresh=0,ok=0;
- try{const c=J.parse(LS.mr_h4||'[]');if(c.length){merge(c);fresh=!force&&Date.now()-(+LS.mr_t4||0)<432e5;setH('захирашуда',!fresh)}}catch{}
+ try{const c=J.parse(LS.mr_h5||'[]');if(c.length){merge(c);fresh=!force&&Date.now()-(+LS.mr_t5||0)<432e5;setH('захирашуда',!fresh)}}catch{}
+ try{const r=await fetch('data/extra.json');if(r.ok){const x=await r.json();if(Array.isArray(x)&&x.length){merge(x.filter(h=>h&&h.n&&h.ll&&h.ll.length==2).map((h,i)=>{const k=TY[h.k]?h.k:'c';return{id:'x'+i,k,n:h.n,c:h.c||'',s:nrm([h.n,h.c,KW[k]].join(' ')),ll:[+h.ll[0],+h.ll[1]]}}));setH('қайдҳои дастӣ',1)}}}catch{}
  if(!fresh){
   try{const r=await fetch('data/facilities.json');if(r.ok){const a=parse(await r.json());if(a.length){merge(a);setH('ҷадвали сайт',1)}}}catch{}
   try{merge(parse(await race(Q1)));ok=1;setH('OpenStreetMap',1);sv()}catch{}
   try{merge(parse(await race(Q2)));ok=1;sv()}catch{}
-  if(ok)LS.mr_t4=Date.now()}
+  try{merge(parse(await race(Q3)));ok=1;sv()}catch{}
+  if(ok)LS.mr_t5=Date.now()}
  LD=0;
  if(HS.length)setH(ok||fresh?'OpenStreetMap':'бе навсозӣ',0);
  else{ST('Рӯйхат боргирӣ нашуд. Интернетро санҷед ва инҷоро пахш кунед.');sg()}}
@@ -882,7 +894,7 @@ $('bk').onclick=()=>location.reload();
 $('hd').onclick=()=>$('sh').classList.toggle('cl');
 window.ResizeObserver&&new ResizeObserver(()=>document.documentElement.style.setProperty('--shh',($('sh').hidden?0:$('sh').offsetHeight)+'px')).observe($('sh'));
 
-let me,WID,SIM,LT=0,LP,RT=0,RL,IMG='',bc,WL;try{bc=new BroadcastChannel('mrtj')}catch{}
+let me,WID,LT=0,LP,RT=0,RL,IMG='',bc,WL;try{bc=new BroadcastChannel('mrtj')}catch{}
 const PR=()=>{try{return J.parse(LS.mr_pf||'{}')}catch{return{}}};
 function tab(p){['pf','pt'].forEach(x=>$(x).hidden=x!=p);qa('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p==p))}
 function onEnter(){const p=PR();$('nm').value=p.name||'';$('rl').value=p.role||'Ронанда';$('vh').value=p.veh||'';$('ph').value=p.ph||'';tab('pf')}
@@ -906,9 +918,6 @@ function pos(a,b,f){const first=!me;ME=[a,b];
 $('sv').onclick=async()=>{if(!need())return;if(!navigator.geolocation)return $('gs').textContent='GPS дар ин дастгоҳ нест';$('gs').textContent='GPS ҷустуҷӯ мешавад…';
  try{navigator.wakeLock&&(WL=await navigator.wakeLock.request('screen'))}catch{}
  WID&&navigator.geolocation.clearWatch(WID);WID=navigator.geolocation.watchPosition(p=>pos(p.coords.latitude,p.coords.longitude),()=>$('gs').textContent='GPS иҷозат нест: ба браузер иҷозат диҳед',{enableHighAccuracy:true,maximumAge:3000});tab('pt')};
-$('sm').onclick=()=>{if(!need())return;if(SIM){clearInterval(SIM);SIM=0;return $('sm').textContent='Намоиши озмоишӣ (бе ҳаракат дар роҳ)'}
- WID&&navigator.geolocation.clearWatch(WID);$('sm').textContent='Намоишро қатъ кардан';const a=SEL.ll[0]+.02,b=SEL.ll[1]-.025;let k=0;
- SIM=setInterval(()=>{k++;const f=Math.min(1,k/40);pos(a+(SEL.ll[0]-a)*f,b+(SEL.ll[1]-b)*f,1);if(f>=1){clearInterval(SIM);SIM=0}},4000);tab('pt')};
 $('im').onchange=e=>{const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f),i=new Image();
  i.onload=()=>{const s=Math.min(1,340/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);
   IMG=c.toDataURL('image/jpeg',.5);$('pv').src=IMG;$('pv').hidden=0;URL.revokeObjectURL(u)};i.src=u};
