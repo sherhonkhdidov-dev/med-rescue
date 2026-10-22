@@ -1,6 +1,8 @@
 # MED RESCUE · Gemini serveri (Cloudflare Worker)
 
-Sayt savollarini Gemini (`gemini-3.8-flash`) ga yuboradi. API kalit saytda emas, faqat shu serverda secret sifatida saqlanadi.
+Sayt savollarini Gemini ga yuboradi. API kalit saytda emas, faqat shu serverda secret sifatida saqlanadi.
+
+Model: avval `gemini-2.5-flash` sinaladi. Google 2.5 modellarini yangi foydalanuvchilar uchun yopib qo'ygan bo'lishi mumkin (404 qaytaradi), shunda server o'zi `gemini-3.8-flash` ga o'tadi. Tartibni `wrangler.toml` dagi `GEMINI_MODELS` bilan o'zgartirasiz.
 
 ## Joylash (bir marta)
 

@@ -1,8 +1,10 @@
 // MED RESCUE · Gemini oraliq serveri (Cloudflare Worker)
 // Kalit (GEMINI_API_KEY) faqat shu yerda, Cloudflare secret sifatida saqlanadi.
 
-const MODEL = 'gemini-3.8-flash';
-const API = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent';
+// Modellar tartibi: birinchisi sinaladi, mavjud bo'lmasa (404) keyingisiga o'tadi.
+// wrangler.toml dagi GEMINI_MODELS bilan o'zgartiriladi.
+const DEFAULT_MODELS = 'gemini-2.5-flash,gemini-3.8-flash';
+const API = m => 'https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent';
 
 const MAX_MSGS = 10;      // tarixdan oxirgi nechta xabar yuboriladi
 const MAX_CHARS = 1000;   // bitta xabar uzunligi
@@ -53,6 +55,38 @@ function limited(ip) {
   return false;
 }
 
+let good = ''; // oxirgi ishlagan model (shu isolate ichida)
+
+async function gemini(env, contents) {
+  const list = (env.GEMINI_MODELS || DEFAULT_MODELS).split(',').map(s => s.trim()).filter(Boolean);
+  const order = good && list.includes(good) ? [good, ...list.filter(m => m !== good)] : list;
+  let status = 0;
+  for (const m of order) {
+    let res;
+    try {
+      res = await fetch(API(m), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM }] },
+          contents,
+          generationConfig: { maxOutputTokens: MAX_OUT },
+        }),
+      });
+    } catch {
+      return { error: true, status: 0 };
+    }
+    if (res.ok) { good = m; return { res, model: m }; }
+    status = res.status;
+    const txt = await res.text().catch(() => '');
+    // Model yo'q yoki bu kalit uchun yopilgan: keyingisini sinaymiz. Boshqa xatolarda (429, 5xx) to'xtaymiz.
+    const gone = status === 404 || ((status === 400 || status === 403) && /no longer available/i.test(txt));
+    if (!gone) return { error: true, status };
+    if (good === m) good = '';
+  }
+  return { error: true, status };
+}
+
 function clean(messages) {
   if (!Array.isArray(messages)) return null;
   const out = [];
@@ -88,27 +122,14 @@ export default {
     const contents = clean(body && body.messages);
     if (!contents) return json({ error: 'bad_messages' }, 400, origin);
 
-    let res;
-    try {
-      res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM }] },
-          contents,
-          generationConfig: { maxOutputTokens: MAX_OUT },
-        }),
-      });
-    } catch {
-      return json({ error: 'upstream' }, 502, origin);
-    }
-    if (!res.ok) return json({ error: 'upstream', status: res.status }, 502, origin);
+    const g = await gemini(env, contents);
+    if (g.error) return json({ error: 'upstream', status: g.status }, 502, origin);
 
     let data;
-    try { data = await res.json(); } catch { return json({ error: 'upstream' }, 502, origin); }
+    try { data = await g.res.json(); } catch { return json({ error: 'upstream' }, 502, origin); }
     const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
     const answer = parts.filter(p => typeof p.text === 'string' && !p.thought).map(p => p.text).join('').trim();
     if (!answer) return json({ error: 'empty' }, 502, origin);
-    return json({ answer }, 200, origin);
+    return json({ answer, model: g.model }, 200, origin);
   },
 };
