@@ -925,4 +925,4 @@ $('sd').onclick=async()=>{if(!need())return;$('sd').disabled=1;$('ok').textConte
  const ok=await tx({t:'pt',ag:$('ag').value||'',sx:val('sx')[0],tr:val('tr')[0],bp:$('bp').value||'—',pl:$('pl').value||'—',sp:$('sp').value||'',aw:val('aw')[0],br:val('br')[0],bz:val('bz'),inj:$('ij').value,img:IMG,lat:ME&&ME[0],lng:ME&&ME[1]});
  $('sd').disabled=0;$('ok').textContent=ok?'Маълумот ба «'+SEL.n+'» фиристода шуд.':'Алоқа нест. Интернетро санҷед ва аз нав фиристед.';
  if(ok){['ag','bp','pl','sp','ij','im'].forEach(i=>$(i).value='');IMG='';$('pv').hidden=1;qa('[data-k=bz] .on').forEach(b=>b.classList.remove('on'))}};
-</script></body></html>
+</script><script src="ask.js"></script></body></html>

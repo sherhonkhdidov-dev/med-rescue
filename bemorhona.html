@@ -902,4 +902,4 @@ function lp(){$('pl').innerHTML=PL.map((p,i)=>{const a=AM[p.w.veh||p.w.name],e=a
  ['Утоқи ҷарроҳӣ','Таҷҳизот','Мутахассис','Хуни зарурӣ'].map((x,j)=>'<label class="ck"><input type="checkbox" data-i="'+i+'" data-j="'+j+'"'+(p.c[j]?' checked':'')+'>'+x+' омода аст</label>').join('')+'</div>'}).join('')||'<span class="mu">Ҳоло маълумот нест.</span>'}
 $('pl').onchange=e=>{PL[e.target.dataset.i].c[e.target.dataset.j]=e.target.checked};
 $('al').onclick=()=>$('al').hidden=1;
-</script></body></html>
+</script><script src="ask.js"></script></body></html>
